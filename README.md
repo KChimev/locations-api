@@ -73,7 +73,7 @@ docker run -d --name rabbitmq \
 - OpenStreetMap data (bulgaria-latest.osm.pbf)
 - osm2pgsql
 - Python (for data processing)
-- default.style configuration file
+- default.style configuration file, present in project or at https://github.com/osm2pgsql-dev/osm2pgsql/blob/master/default.style
 
 #### Database Configuration
 ```bash
