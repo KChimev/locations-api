@@ -21,12 +21,18 @@ type application struct {
 	errLog    *log.Logger
 	infoLog   *log.Logger
 	locations *models.LocationEntity
+	pois      *models.POIEntity
 	mqChan    *amqp.Channel
 	mqCon     *amqp.Connection
 }
 
 func CreateApplication(errLog *log.Logger, infoLog *log.Logger) (*application, error) {
 	db, err := GetDBPool()
+	if err != nil {
+		return nil, err
+	}
+
+	poidb, err := GetPOIDbPool()
 	if err != nil {
 		return nil, err
 	}
@@ -40,6 +46,7 @@ func CreateApplication(errLog *log.Logger, infoLog *log.Logger) (*application, e
 		errLog:    errLog,
 		infoLog:   infoLog,
 		locations: &models.LocationEntity{DB: db},
+		pois:      &models.POIEntity{DB: poidb},
 		mqChan:    mqChan,
 		mqCon:     mqcon,
 	}
@@ -58,6 +65,7 @@ func main() {
 	defer app.mqChan.Close()
 	defer app.mqCon.Close()
 	defer app.locations.DB.Close()
+	defer app.pois.DB.Close()
 
 	server := &http.Server{
 		Addr:     constants.DefaultApplicationPort,

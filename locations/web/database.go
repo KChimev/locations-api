@@ -19,3 +19,16 @@ func GetDBPool() (*sql.DB, error) {
 
 	return db, nil
 }
+
+func GetPOIDbPool() (*sql.DB, error) {
+	db, err := sql.Open("postgres", constants.POIConnectionString)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = db.Ping(); err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}

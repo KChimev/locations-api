@@ -22,6 +22,7 @@ const (
 	// Database
 	DBHost     = "localhost"
 	DBName     = "osm_bulgaria"
+	POIDBName  = "tourism_pois"
 	DBUser     = "postgres"
 	DBPassword = "admin123"
 )
@@ -29,4 +30,6 @@ const (
 var (
 	DBConnectionString = fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable",
 		DBHost, DBName, DBUser, DBPassword)
+	POIConnectionString = fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable",
+		DBHost, POIDBName, DBUser, DBPassword)
 )
