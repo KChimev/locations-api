@@ -117,7 +117,7 @@ CREATE TABLE tourism_poi (
 1. Run SDKShell.bat from the GDAL binaries folder
 2. Run the following command:
 ```bash
-ogr2ogr -f "PostgreSQL" PG:"host=localhost dbname=tourism_pois user=postgres password=admin123" "path_to_your_exported_geojson_file.geojson" -nln tourism_pois
+ogr2ogr -f "PostgreSQL" PG:"host=localhost dbname=tourism_pois user=postgres password=admin123" "path_to_your_exported_geojson_file.geojson" -nln tourism_poi
 ```
 
 #### OSM Data Import for Location Information
