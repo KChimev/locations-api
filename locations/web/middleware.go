@@ -13,7 +13,7 @@ func (a *application) logRequest(next http.Handler) http.Handler {
 
 		err := validator.Struct(payload)
 		if err != nil {
-			a.clientError(w, http.StatusBadRequest)
+			clientError(w, http.StatusBadRequest)
 			return
 		}
 

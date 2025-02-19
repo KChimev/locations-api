@@ -15,9 +15,13 @@ type ResponsePayload struct {
 	POIs      []models.POI
 }
 
+func clientError(w http.ResponseWriter, status int) {
+	http.Error(w, http.StatusText(status), status)
+}
+
 func (a *application) getLocation(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		a.clientError(w, http.StatusMethodNotAllowed)
+		clientError(w, http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -29,19 +33,19 @@ func (a *application) getLocation(w http.ResponseWriter, r *http.Request) {
 
 	err := validator.Struct(payload)
 	if err != nil {
-		a.clientError(w, http.StatusBadRequest)
+		clientError(w, http.StatusBadRequest)
 		return
 	}
 
 	lat, err := strconv.ParseFloat(payload.latitude, 64)
 	if err != nil {
-		a.clientError(w, http.StatusBadRequest)
+		clientError(w, http.StatusBadRequest)
 		return
 	}
 
 	lon, err := strconv.ParseFloat(payload.longitude, 64)
 	if err != nil {
-		a.clientError(w, http.StatusBadRequest)
+		clientError(w, http.StatusBadRequest)
 		return
 	}
 
@@ -77,7 +81,7 @@ func (a *application) getLocation(w http.ResponseWriter, r *http.Request) {
 				res.POIs = pois
 			}
 		case <-errChan:
-			a.clientError(w, http.StatusNotFound)
+			clientError(w, http.StatusNotFound)
 			return
 		}
 	}

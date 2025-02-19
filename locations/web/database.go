@@ -7,7 +7,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func GetDBPool() (*sql.DB, error) {
+func GetLocationsDBPool() (*sql.DB, error) {
 	db, err := sql.Open("postgres", constants.DBConnectionString)
 	if err != nil {
 		return nil, err

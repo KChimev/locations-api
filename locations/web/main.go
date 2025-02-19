@@ -27,12 +27,12 @@ type application struct {
 }
 
 func CreateApplication(errLog *log.Logger, infoLog *log.Logger) (*application, error) {
-	db, err := GetDBPool()
+	locDb, err := GetLocationsDBPool()
 	if err != nil {
 		return nil, err
 	}
 
-	poidb, err := GetPOIDbPool()
+	poiDb, err := GetPOIDbPool()
 	if err != nil {
 		return nil, err
 	}
@@ -45,8 +45,8 @@ func CreateApplication(errLog *log.Logger, infoLog *log.Logger) (*application, e
 	app := &application{
 		errLog:    errLog,
 		infoLog:   infoLog,
-		locations: &models.LocationEntity{DB: db},
-		pois:      &models.POIEntity{DB: poidb},
+		locations: &models.LocationEntity{DB: locDb},
+		pois:      &models.POIEntity{DB: poiDb},
 		mqChan:    mqChan,
 		mqCon:     mqcon,
 	}
