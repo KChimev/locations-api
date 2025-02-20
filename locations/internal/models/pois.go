@@ -6,8 +6,14 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type POIInterface interface {
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	Close() error
+	Get(lat float64, lon float64, radius int) ([]POI, error)
+}
+
 type POIEntity struct {
-	DB *sql.DB
+	Postgre
 }
 
 type POI struct {
@@ -37,7 +43,7 @@ func (p *POIEntity) Get(lat float64, lon float64, radius int) ([]POI, error) {
 		LIMIT 10;
 	`
 
-	rows, err := p.DB.Query(qry, lon, lat, radius)
+	rows, err := p.Query(qry, lon, lat, radius)
 	if err != nil {
 		return nil, err
 	}

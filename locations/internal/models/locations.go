@@ -6,8 +6,14 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type LocationInterface interface {
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	Close() error
+	Get(lat float64, lon float64, radius int) ([]Location, error)
+}
+
 type LocationEntity struct {
-	DB *sql.DB
+	Postgre
 }
 
 type Location struct {
@@ -45,7 +51,7 @@ func (l *LocationEntity) Get(lat float64, lon float64, radius int) ([]Location, 
 		LIMIT 10;
 	`
 
-	rows, err := l.DB.Query(qry, lon, lat, radius)
+	rows, err := l.Query(qry, lon, lat, radius)
 	if err != nil {
 		return nil, err
 	}

@@ -8,6 +8,11 @@ import (
 	"github.com/streadway/amqp"
 )
 
+type RabbitConnection struct {
+	mqChan *amqp.Channel
+	mqCon  *amqp.Connection
+}
+
 func setupRabbit() (*amqp.Connection, *amqp.Channel, error) {
 	mqcon, err := amqp.Dial(constants.RabbitURL)
 	if err != nil {
@@ -22,8 +27,8 @@ func setupRabbit() (*amqp.Connection, *amqp.Channel, error) {
 	return mqcon, mqchan, nil
 }
 
-func (a *application) validateToken(token string) (bool, error) {
-	replyQueue, err := a.mqChan.QueueDeclare(
+func (c *RabbitConnection) validateToken(token string) (bool, error) {
+	replyQueue, err := c.mqChan.QueueDeclare(
 		"",
 		false,
 		true,
@@ -38,7 +43,7 @@ func (a *application) validateToken(token string) (bool, error) {
 
 	correlationID := uuid.New().String()
 
-	err = a.mqChan.Publish(
+	err = c.mqChan.Publish(
 		constants.AuthenticationExchange,
 		constants.AuthenticateQueueKey,
 		false,
@@ -54,7 +59,7 @@ func (a *application) validateToken(token string) (bool, error) {
 		return false, err
 	}
 
-	msgs, err := a.mqChan.Consume(
+	msgs, err := c.mqChan.Consume(
 		replyQueue.Name,
 		"",
 		true,

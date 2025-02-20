@@ -6,9 +6,9 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func (a *application) logRequest(next http.Handler) http.Handler {
+func (a *Application) logRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		payload := &payload{latitude: r.URL.Query().Get("lat"), longitude: r.URL.Query().Get("lon")}
+		payload := &RequestPayload{latitude: r.URL.Query().Get("lat"), longitude: r.URL.Query().Get("lon")}
 		validator := validator.New(validator.WithRequiredStructEnabled())
 
 		err := validator.Struct(payload)
@@ -23,7 +23,7 @@ func (a *application) logRequest(next http.Handler) http.Handler {
 	})
 }
 
-func (a *application) checkAuthorization(next http.Handler) http.Handler {
+func (a *Application) checkAuthorization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authToken := r.Header.Get("Authorization")
 		if authToken == "" {
@@ -31,7 +31,7 @@ func (a *application) checkAuthorization(next http.Handler) http.Handler {
 			return
 		}
 
-		valid, err := a.validateToken(authToken)
+		valid, err := a.rabbit.validateToken(authToken)
 		if err != nil || !valid {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return

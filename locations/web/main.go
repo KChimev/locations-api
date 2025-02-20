@@ -1,32 +1,27 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/kchimev/locations-api/locations/internal/constants"
 	"github.com/kchimev/locations-api/locations/internal/models"
-	"github.com/streadway/amqp"
 )
 
-type payload struct {
-	latitude  string
-	longitude string
-}
-
-type application struct {
+type Application struct {
 	errLog    *log.Logger
 	infoLog   *log.Logger
-	locations *models.LocationEntity
-	pois      *models.POIEntity
-	mqChan    *amqp.Channel
-	mqCon     *amqp.Connection
+	locations *LocationsService
+	rabbit    *RabbitConnection
 }
 
-func CreateApplication(errLog *log.Logger, infoLog *log.Logger) (*application, error) {
+func CreateApplication(errLog *log.Logger, infoLog *log.Logger) (*Application, error) {
 	locDb, err := GetLocationsDBPool()
 	if err != nil {
 		return nil, err
@@ -37,21 +32,69 @@ func CreateApplication(errLog *log.Logger, infoLog *log.Logger) (*application, e
 		return nil, err
 	}
 
-	mqcon, mqChan, err := setupRabbit()
+	mqCon, mqChan, err := setupRabbit()
 	if err != nil {
 		return nil, err
 	}
 
-	app := &application{
-		errLog:    errLog,
-		infoLog:   infoLog,
-		locations: &models.LocationEntity{DB: locDb},
-		pois:      &models.POIEntity{DB: poiDb},
-		mqChan:    mqChan,
-		mqCon:     mqcon,
+	server := &Application{
+		errLog:  errLog,
+		infoLog: infoLog,
+		locations: &LocationsService{
+			locEnt: &models.LocationEntity{locDb},
+			poiEnt: &models.POIEntity{poiDb},
+		},
+		rabbit: &RabbitConnection{
+			mqChan: mqChan,
+			mqCon:  mqCon,
+		},
 	}
 
-	return app, nil
+	return server, nil
+}
+
+func (a *Application) handle(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		clientError(w, http.StatusMethodNotAllowed)
+		return
+	}
+
+	payload := &RequestPayload{
+		latitude:  r.URL.Query().Get("lat"),
+		longitude: r.URL.Query().Get("lon"),
+	}
+	validator := validator.New(validator.WithRequiredStructEnabled())
+
+	err := validator.Struct(payload)
+	if err != nil {
+		clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	lat, err := strconv.ParseFloat(payload.latitude, 64)
+	if err != nil {
+		clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	lon, err := strconv.ParseFloat(payload.longitude, 64)
+	if err != nil {
+		clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	res, err := a.locations.fetchLocationData(lat, lon)
+	if err != nil {
+		clientError(w, http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(*res); err != nil {
+		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
+	}
 }
 
 func main() {
@@ -62,10 +105,10 @@ func main() {
 	if err != nil {
 		errLog.Fatal(err)
 	}
-	defer app.mqChan.Close()
-	defer app.mqCon.Close()
-	defer app.locations.DB.Close()
-	defer app.pois.DB.Close()
+	defer app.rabbit.mqChan.Close()
+	defer app.rabbit.mqCon.Close()
+	defer app.locations.locEnt.Close()
+	defer app.locations.poiEnt.Close()
 
 	server := &http.Server{
 		Addr:     constants.DefaultApplicationPort,
@@ -74,9 +117,9 @@ func main() {
 	}
 
 	go func() {
-		log.Println("Server starting...")
+		app.infoLog.Println("Server starting...")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("HTTP server failed: %v", err)
+			app.errLog.Fatalf("HTTP server failed: %v", err)
 		}
 	}()
 
